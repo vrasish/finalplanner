@@ -27,6 +27,7 @@ def health_check():
     return {"status": "ok", "message": "API is running"}
 
 # Initialize database endpoint - creates tables if they don't exist
+@app.get("/init-db")
 @app.post("/init-db")
 def init_database():
     """Initialize database tables - run this once after deployment"""
