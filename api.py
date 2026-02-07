@@ -26,6 +26,71 @@ app.add_middleware(
 def health_check():
     return {"status": "ok", "message": "API is running"}
 
+# Initialize database endpoint - creates tables if they don't exist
+@app.post("/init-db")
+def init_database():
+    """Initialize database tables - run this once after deployment"""
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        
+        # Create users table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(50) NOT NULL UNIQUE,
+                password_hash VARCHAR(255) NOT NULL,
+                role VARCHAR(20) DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Create tasks table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                title TEXT,
+                deadline DATE,
+                duration_minutes INT,
+                priority INT,
+                status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                category VARCHAR(50) DEFAULT 'General',
+                completed_at TIMESTAMP NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+        
+        # Create daily_plan table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS daily_plan (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                task_id INT,
+                plan_date DATE,
+                scheduled_time TIME,
+                task_order INT,
+                FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+        
+        # Create default user
+        cur.execute("""
+            INSERT INTO users (id, username, password_hash) 
+            VALUES (1, 'default', 'default_hash')
+            ON DUPLICATE KEY UPDATE username=username
+        """)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {"message": "Database initialized successfully", "tables_created": True}
+    except Exception as e:
+        return {"message": f"Error initializing database: {str(e)}", "tables_created": False}
+
 # Helper function to get first available user_id
 def get_default_user_id():
     try:
