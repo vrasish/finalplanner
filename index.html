@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Scheduler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f5576c 0%, #e0455a 100%);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85em;
+            width: auto;
+            margin: 5px;
+        }
+
+        .tasks-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .task-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .task-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .task-details {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .task-badge {
+            background: #667eea;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .schedule-container {
+            position: relative;
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 0;
+        }
+
+        .time-label {
+            padding: 10px;
+            text-align: right;
+            font-weight: 600;
+            color: #666;
+            border-right: 2px solid #e0e0e0;
+        }
+
+        .time-slot {
+            min-height: 60px;
+            border-bottom: 1px solid #e0e0e0;
+            position: relative;
+            padding: 5px;
+        }
+
+        .time-slot.school-hours {
+            background: #fff3cd;
+        }
+
+        .time-slot.break-time {
+            background: #d1ecf1;
+        }
+
+        .scheduled-task {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin: 2px 0;
+            font-size: 0.9em;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .scheduled-task:hover {
+            opacity: 0.9;
+        }
+
+        .scheduled-task.overdue {
+            background: linear-gradient(135deg, #f5576c 0%, #e0455a 100%);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .date-selector {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .date-selector input {
+            width: auto;
+            margin: 0 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📅 Smart Scheduler</h1>
+            <p style="font-size: 1.1em; opacity: 0.9;">Schedule your tasks with time slots</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Sidebar: Tasks & Add Form -->
+            <div>
+                <div class="card">
+                    <h2>➕ Add Task</h2>
+                    <div id="message"></div>
+                    <form id="taskForm">
+                        <div class="form-group">
+                            <label for="title">Task Name</label>
+                            <input type="text" id="title" required placeholder="e.g., Math Homework">
+                        </div>
+                        <div class="form-group">
+                            <label for="duration">Duration (minutes)</label>
+                            <input type="number" id="duration" required min="1" placeholder="e.g., 30">
+                        </div>
+                        <div class="form-group">
+                            <label for="due_date">Due Date (M/D/YY)</label>
+                            <input type="text" id="due_date" required placeholder="e.g., 2/15/26">
+                        </div>
+                        <div class="form-group">
+                            <label for="schedule_date">Schedule For Date (optional - matches schedule view date)</label>
+                            <input type="date" id="schedule_date" placeholder="Select date">
+                            <small style="color: #666; font-size: 0.85em;">Leave blank to auto-schedule. Set to match the date you're viewing.</small>
+                        </div>
+                        <button type="button" class="btn" onclick="addTask(event)">Add Task</button>
+                    </form>
+                </div>
+
+                <div class="card" style="margin-top: 20px;">
+                    <h2>📋 Tasks</h2>
+                    <div id="tasksContainer">
+                        <div class="empty-state">No tasks yet</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Schedule -->
+            <div class="card schedule-container">
+                <h2>📅 Daily Schedule</h2>
+                <div class="date-selector">
+                    <button class="btn btn-small" onclick="changeDate(-1)">← Previous</button>
+                    <input type="date" id="scheduleDate" onchange="loadSchedule()">
+                    <button class="btn btn-small" onclick="changeDate(1)">Next →</button>
+                </div>
+                <div id="scheduleContainer">
+                    <div class="empty-state">Loading schedule...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/config.js"></script>
+    <script>
+        // Auto-detect local IP for mobile device access
+        function getLocalIP() {
+            // Try to get IP from current location if on same network
+            const hostname = window.location.hostname;
+            if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+                return `http://${hostname}:8000`;
+            }
+            return null;
+        }
+        
+        // Use configured URL, or auto-detect, or fallback to localhost
+        const API_BASE = (window.API_BASE_URL || getLocalIP() || 'http://127.0.0.1:8000').replace(/\/$/, '');
+        console.log('🌐 API Base URL:', API_BASE);
+        let currentDate = new Date().toISOString().split('T')[0];
+        
+        // Test API connection on load
+        async function testAPIConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                console.log('✅ API is connected:', data);
+                return true;
+            } catch (error) {
+                console.error('❌ API connection failed:', error);
+                showMessage('⚠️ Cannot connect to API server. Make sure it\'s running on http://127.0.0.1:8000', 'error');
+                return false;
+            }
+        }
+
+        // Initialize
+        document.getElementById('scheduleDate').value = currentDate;
+        const scheduleDateInput = document.getElementById('schedule_date');
+        if (scheduleDateInput) {
+            scheduleDateInput.value = currentDate;
+        }
+        
+        // Sync schedule date with schedule view date
+        document.getElementById('scheduleDate').addEventListener('change', () => {
+            const scheduleViewDate = document.getElementById('scheduleDate').value;
+            if (scheduleDateInput) {
+                scheduleDateInput.value = scheduleViewDate;
+            }
+        });
+
+        // Add task function - make it global with debouncing
+        let isSubmitting = false;
+        window.addTask = async function(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            // Prevent multiple submissions
+            if (isSubmitting) {
+                console.log('Already submitting, please wait...');
+                return;
+            }
+            
+            isSubmitting = true;
+            console.log('addTask called');
+            
+            const titleEl = document.getElementById('title');
+            const durationEl = document.getElementById('duration');
+            const dueDateEl = document.getElementById('due_date');
+            
+            if (!titleEl || !durationEl || !dueDateEl) {
+                console.error('Form elements not found');
+                showMessage('Form error - please refresh the page', 'error');
+                isSubmitting = false;
+                return;
+            }
+            
+            const title = titleEl.value.trim();
+            const duration = parseInt(durationEl.value);
+            const due_date = dueDateEl.value.trim();
+            const scheduleDateEl = document.getElementById('schedule_date');
+            const schedule_date = scheduleDateEl ? scheduleDateEl.value : '';
+
+            console.log('Form values:', {title, duration, due_date, schedule_date});
+
+            if (!title || !duration || !due_date) {
+                showMessage('Please fill in all required fields', 'error');
+                isSubmitting = false;
+                return;
+            }
+
+            if (isNaN(duration) || duration <= 0) {
+                showMessage('Please enter a valid duration', 'error');
+                isSubmitting = false;
+                return;
+            }
+
+            try {
+                let url = `${API_BASE}/tasks?title=${encodeURIComponent(title)}&duration=${duration}&due_date=${encodeURIComponent(due_date)}`;
+                if (schedule_date) {
+                    url += `&schedule_date=${encodeURIComponent(schedule_date)}`;
+                }
+                console.log('Fetching:', url);
+                
+                // Add timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    console.log('Request timeout - aborting');
+                    controller.abort();
+                }, 5000); // 5 second timeout
+                
+                let response;
+                try {
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 
+                            'accept': 'application/json'
+                        },
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                } catch (fetchError) {
+                    clearTimeout(timeoutId);
+                    if (fetchError.name === 'AbortError') {
+                        throw new Error('Request timed out. The API server may not be running or responding.');
+                    }
+                    throw fetchError;
+                }
+
+                console.log('Response received! Status:', response.status);
+                console.log('Response ok:', response.ok);
+
+                const responseText = await response.text();
+                console.log('📥 Response status:', response.status);
+                console.log('📥 Response text:', responseText);
+
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(responseText);
+                    } catch {
+                        errorData = {detail: responseText || `HTTP error! status: ${response.status}`};
+                    }
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                }
+
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch {
+                    data = {message: 'Task added successfully'};
+                }
+                console.log('Response data:', data);
+
+                let message = 'Task added successfully!';
+                if (data.scheduled && data.schedule_date && data.schedule_time) {
+                    message += ` Scheduled for ${new Date(data.schedule_date).toLocaleDateString()} at ${data.schedule_time}`;
+                } else if (!data.scheduled) {
+                    message += ' (Could not auto-schedule - no available time slot)';
+                }
+                showMessage(message, 'success');
+                document.getElementById('taskForm').reset();
+                await loadTasks();
+                await loadSchedule();
+            } catch (error) {
+                console.error('Error details:', error);
+                let errorMsg = error.message;
+                
+                if (error.name === 'AbortError' || error.message.includes('timed out')) {
+                    errorMsg = 'Request timed out. The API server may not be responding. Please check if the server is running.';
+                } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMsg = 'Cannot connect to API server. Make sure it\'s running on http://127.0.0.1:8000';
+                }
+                
+                showMessage(`Error: ${errorMsg}`, 'error');
+            } finally {
+                isSubmitting = false;
+            }
+        };
+
+        // Add form submit listener
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, setting up form');
+            const form = document.getElementById('taskForm');
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    console.log('Form submitted');
+                    window.addTask(e);
+                });
+                console.log('Form listener added');
+            } else {
+                console.error('Form not found!');
+            }
+        });
+
+        // Load tasks
+        async function loadTasks() {
+            try {
+                console.log('📡 API Call: GET', `${API_BASE}/tasks`);
+                const response = await fetch(`${API_BASE}/tasks`);
+                
+                console.log('📥 Response status:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const tasks = await response.json();
+                console.log('✅ Tasks loaded from API:', tasks.length, 'tasks');
+
+                const container = document.getElementById('tasksContainer');
+                
+                if (!tasks || tasks.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No tasks yet</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                tasks.forEach(task => {
+                    const taskDiv = document.createElement('div');
+                    taskDiv.className = 'task-item';
+                    
+                    const dueDate = new Date(task.due_date);
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    const isOverdue = dueDate < today;
+                    
+                    // Escape HTML in task title
+                    const safeTitle = task.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    
+                    taskDiv.innerHTML = `
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-details">
+                            <span class="task-badge">${task.duration} min</span>
+                            <span class="task-badge">Due: ${new Date(task.due_date).toLocaleDateString()}</span>
+                            ${isOverdue ? '<span style="color: #f5576c; font-weight: 600;">OVERDUE</span>' : ''}
+                        </div>
+                        <button class="btn btn-danger btn-small" onclick="deleteTask(${task.id})">Delete</button>
+                    `;
+                    container.appendChild(taskDiv);
+                });
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                document.getElementById('tasksContainer').innerHTML = 
+                    `<div class="message error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Load schedule
+        async function loadSchedule() {
+            const date = document.getElementById('scheduleDate').value;
+            currentDate = date;
+            
+            try {
+                console.log('📡 API Call: GET', `${API_BASE}/schedule/${date}`);
+                const response = await fetch(`${API_BASE}/schedule/${date}`);
+                
+                console.log('📥 Response status:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const schedule = await response.json();
+                console.log('✅ Schedule loaded from API:', Array.isArray(schedule) ? schedule.length : 'N/A', 'tasks');
+
+                const container = document.getElementById('scheduleContainer');
+                
+                if (!Array.isArray(schedule) || schedule.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No tasks scheduled for this day. Click "Schedule" on a task to add it to the schedule.</div>';
+                    return;
+                }
+                
+                // Generate time slots (5 AM to 11 PM)
+                let html = '<div class="time-slots">';
+                html += '<div></div><div style="font-weight: 600; padding: 10px; border-bottom: 2px solid #667eea;">Schedule</div>';
+                
+                // Check if current date is a weekday
+                const currentDateObj = new Date(date + 'T00:00:00');
+                const dayOfWeek = currentDateObj.getDay(); // 0 = Sunday, 1 = Monday, etc.
+                const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+                
+                for (let hour = 5; hour <= 23; hour++) {
+                    const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+                    // School hours: Monday-Friday, 8 AM - 4 PM
+                    const isSchoolHours = isWeekday && hour >= 8 && hour < 16;
+                    
+                    html += `<div class="time-label">${timeStr}</div>`;
+                    html += `<div class="time-slot ${isSchoolHours ? 'school-hours' : ''}" data-hour="${hour}">`;
+                    
+                    if (isSchoolHours && hour === 8) {
+                        html += `<div style="text-align: center; padding: 5px; font-weight: 600; color: #856404;">🏫 SCHOOL</div>`;
+                    }
+                    
+                    // Add scheduled tasks that start in this hour slot
+                    schedule.forEach(task => {
+                        const [startHour, startMin] = task.start_time.split(':').map(Number);
+                        const [endHour, endMin] = task.end_time.split(':').map(Number);
+                        
+                        // Show task in the hour slot where it starts
+                        if (startHour === hour) {
+                            const dueDate = new Date(task.due_date);
+                            const today = new Date();
+                            today.setHours(0,0,0,0);
+                            const isOverdue = dueDate < today;
+                            
+                            html += `<div class="scheduled-task ${isOverdue ? 'overdue' : ''}" title="${task.start_time} - ${task.end_time}">
+                                <strong>${task.title}</strong><br>
+                                <small>${task.start_time} - ${task.end_time} (${task.duration}min)</small>
+                            </div>`;
+                        }
+                    });
+                    
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading schedule:', error);
+                document.getElementById('scheduleContainer').innerHTML = 
+                    `<div class="message error">Error: ${error.message}</div>`;
+            }
+        }
+
+
+        // Delete task
+        async function deleteTask(taskId) {
+            if (!confirm('Delete this task?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+                    method: 'DELETE',
+                    headers: { 'accept': 'application/json' }
+                });
+
+                if (response.ok) {
+                    showMessage('Task deleted!', 'success');
+                    loadTasks();
+                    loadSchedule();
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+
+        // Change date
+        function changeDate(days) {
+            const dateInput = document.getElementById('scheduleDate');
+            const current = new Date(dateInput.value);
+            current.setDate(current.getDate() + days);
+            dateInput.value = current.toISOString().split('T')[0];
+            loadSchedule();
+        }
+
+        // Show message
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = text;
+            messageDiv.style.display = 'block';
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Load on page load
+        window.addEventListener('load', async () => {
+            const apiConnected = await testAPIConnection();
+            if (apiConnected) {
+                await loadTasks();
+                await loadSchedule();
+            }
+        });
+    </script>
+</body>
+</html>
